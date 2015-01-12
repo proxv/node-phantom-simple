@@ -359,8 +359,12 @@ exports.create = function (callback, options) {
 
         var proxy = {
             process: phantom,
-            createPage: function (callback) {
-                request_queue.push([[0,'createPage'], callbackOrDummy(callback, poll_func)]);
+            createPage: function (ignore_callbacks, callback) {
+                if (arguments.length < 2) {
+                    callback = ignore_callbacks;
+                    ignore_callbacks = [];
+                }
+                request_queue.push([[0,'createPage', ignore_callbacks], callbackOrDummy(callback, poll_func)]);
             },
             injectJs: function (filename,callback) {
                 request_queue.push([[0,'injectJs', filename], callbackOrDummy(callback, poll_func)]);

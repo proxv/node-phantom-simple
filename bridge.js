@@ -114,8 +114,10 @@ var callbacks = [
 	'onPrompt', 'onResourceRequested', 'onResourceReceived', 'onResourceError', 'onUrlChanged',
 ];
 
-function setup_callbacks (id, page) {
+function setup_callbacks (id, page, ignore_callbacks) {
+	ignore_callbacks = ignore_callbacks || [];
 	callbacks.forEach(function (cb) {
+        if (ignore_callbacks.indexOf(cb) >= 0) return;
         page[cb] = function (parm) {
             var args = Array.prototype.slice.call(arguments);
             if ((cb==='onResourceRequested') && (parm.url.indexOf('data:image') === 0)) return;
@@ -132,7 +134,7 @@ function setup_callbacks (id, page) {
 	}
 }
 
-function setup_page (page) {
+function setup_page (page, ignore_callbacks) {
 	var id    = page_id++;
 	page.getProperty = function (prop) {
 		return page[prop];
@@ -145,14 +147,14 @@ function setup_page (page) {
 		return true;
 	}
 	pages[id] = page;
-	setup_callbacks(id, page);
+	setup_callbacks(id, page, ignore_callbacks);
 	return id;
 }
 
 var global_methods = {
-	createPage: function () {
+	createPage: function (ignore_callbacks) {
 		var page  = webpage.create();
-		var id = setup_page(page);
+		var id = setup_page(page, ignore_callbacks);
 		return { page_id: id };
 	},
 
