@@ -145,7 +145,7 @@ function setup_callbacks (id, page, ignore_callbacks, files_to_inject) {
                 });
             }
             var args = Array.prototype.slice.call(arguments);
-            callback_stack.push({'page_id': id, 'callback': cb, 'args': args});
+            callback_stack.push({'page_id': id, 'callback': 'onInitialized', 'args': args});
         };
     }
 
