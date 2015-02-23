@@ -110,13 +110,13 @@ var service = webserver.listen('127.0.0.1:0', function (req, res) {
 
 var callbacks = [
 	'onAlert', 'onCallback', 'onClosing', 'onConfirm', 'onConsoleMessage', 'onError', 'onFilePicker',
-	'onInitialized', 'onLoadFinished', 'onLoadStarted', 'onNavigationRequested',
+	'onLoadFinished', 'onLoadStarted', 'onNavigationRequested',
 	'onPrompt', 'onResourceRequested', 'onResourceReceived', 'onResourceError', 'onUrlChanged',
 ];
 
-function setup_callbacks (id, page, ignore_callbacks) {
-	ignore_callbacks = ignore_callbacks || [];
-	callbacks.forEach(function (cb) {
+function setup_callbacks (id, page, ignore_callbacks, files_to_inject) {
+    ignore_callbacks = ignore_callbacks || [];
+    callbacks.forEach(function (cb) {
         if (ignore_callbacks.indexOf(cb) >= 0) return;
         page[cb] = function (parm) {
             var args = Array.prototype.slice.call(arguments);
@@ -124,17 +124,34 @@ function setup_callbacks (id, page, ignore_callbacks) {
             // console.log("Callback: " + cb);
             if (cb==='onClosing') { args = [] };
             callback_stack.push({'page_id': id, 'callback': cb, 'args': args});
-	        // console.log("Callback stack size now: " + callback_stack.length);
+            // console.log("Callback stack size now: " + callback_stack.length);
         };
-	});
-	// Special case this
-	page.onPageCreated = function (page) {
-		var new_id = setup_page(page);
-		callback_stack.push({'page_id': id, 'callback': 'onPageCreated', 'args': [new_id]})
-	}
+    });
+
+    // Special case these
+
+    if (ignore_callbacks.indexOf('onPageCreated') < 0) {
+        page.onPageCreated = function (page) {
+            var new_id = setup_page(page);
+            callback_stack.push({'page_id': id, 'callback': 'onPageCreated', 'args': [new_id]})
+        };
+    }
+
+    if (ignore_callbacks.indexOf('onInitialized') < 0) {
+        page.onInitialized = function() {
+            if (Array.isArray(files_to_inject) && files_to_inject.length > 0) {
+                files_to_inject.forEach(function(file) {
+                    page.injectJs(file);
+                });
+            }
+            var args = Array.prototype.slice.call(arguments);
+            callback_stack.push({'page_id': id, 'callback': cb, 'args': args});
+        };
+    }
+
 }
 
-function setup_page (page, ignore_callbacks) {
+function setup_page (page, ignore_callbacks, files_to_inject) {
 	var id    = page_id++;
 	page.getProperty = function (prop) {
 		return page[prop];
@@ -147,14 +164,14 @@ function setup_page (page, ignore_callbacks) {
 		return true;
 	}
 	pages[id] = page;
-	setup_callbacks(id, page, ignore_callbacks);
+	setup_callbacks(id, page, ignore_callbacks, files_to_inject);
 	return id;
 }
 
 var global_methods = {
-	createPage: function (ignore_callbacks) {
+	createPage: function (args) {
 		var page  = webpage.create();
-		var id = setup_page(page, ignore_callbacks);
+		var id = setup_page(page, args.ignore_callbacks, args.files_to_inject);
 		return { page_id: id };
 	},
 

@@ -120,7 +120,7 @@ exports.create = function (callback, options) {
             phantom.stdout.on('data', function (data) {
                 return console.log('phantom stdout: '+data);
             });
-            
+
             var matches = data.toString().match(/Ready \[(\d+)\]/);
             if (!matches) {
                 phantom.kill();
@@ -168,7 +168,7 @@ exports.create = function (callback, options) {
                 }
                 var re = /(?:127\.0\.0\.1|localhost):(\d+)/ig, match;
                 var ports = [];
-                
+
                 while (match = re.exec(stdout)) {
                     ports.push(match[1]);
                 }
@@ -203,7 +203,7 @@ exports.create = function (callback, options) {
         	}
         },100);
     };
-    
+
     spawnPhantom(function (err, phantom, port) {
         if (err) {
             return callback(err);
@@ -286,7 +286,7 @@ exports.create = function (callback, options) {
 
             pages[id] = page;
 
-            return page;            
+            return page;
         }
 
         var poll_func = setup_long_poll(phantom, port, pages, setup_new_page);
@@ -297,7 +297,7 @@ exports.create = function (callback, options) {
             var page = params[0];
             var method = params[1];
             var args = params.slice(2);
-            
+
             var http_opts = {
                 hostname: '127.0.0.1',
                 port: port,
@@ -323,7 +323,7 @@ exports.create = function (callback, options) {
                     }
                     var results = JSON.parse(data);
                     // console.log("Response: ", results);
-                    
+
                     if (err) {
                         next();
                         return callback(results);
@@ -332,7 +332,7 @@ exports.create = function (callback, options) {
                     if (method === 'createPage') {
                         var id = results.page_id;
                         var page = setup_new_page(id);
-                        
+
                         next();
                         return callback(null, page);
                     }
@@ -359,12 +359,12 @@ exports.create = function (callback, options) {
 
         var proxy = {
             process: phantom,
-            createPage: function (ignore_callbacks, callback) {
+            createPage: function (args, callback) {
                 if (arguments.length < 2) {
-                    callback = ignore_callbacks;
-                    ignore_callbacks = [];
+                    callback = args;
+                    args = {};
                 }
-                request_queue.push([[0,'createPage', ignore_callbacks], callbackOrDummy(callback, poll_func)]);
+                request_queue.push([[0,'createPage', args], callbackOrDummy(callback, poll_func)]);
             },
             injectJs: function (filename,callback) {
                 request_queue.push([[0,'injectJs', filename], callbackOrDummy(callback, poll_func)]);
@@ -392,7 +392,7 @@ exports.create = function (callback, options) {
                 phantom.on.apply(phantom, arguments);
             },
         };
-        
+
         callback(null, proxy);
     });
 }
